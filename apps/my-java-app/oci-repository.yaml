@@ -1,12 +1,11 @@
 apiVersion: source.toolkit.fluxcd.io/v1
-kind: OCIRepository
+kind: HelmRepository
 metadata:
   name: my-java-app
   namespace: default
 spec:
+  type: oci
   interval: 10m
-  url: oci://ghcr.io/bazoocaze/charts/my-java-app
-  ref:
-    tag: 0.1.0
+  url: oci://ghcr.io/bazoocaze/charts
   secretRef:
     name: ghcr-auth

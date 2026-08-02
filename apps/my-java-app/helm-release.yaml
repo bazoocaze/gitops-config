@@ -9,8 +9,10 @@ spec:
     spec:
       chart: my-java-app
       sourceRef:
-        kind: OCIRepository
+        kind: HelmRepository
         name: my-java-app
+        namespace: default
+      interval: 10m
   values:
     replicaCount: 1
     imagePullSecrets:
