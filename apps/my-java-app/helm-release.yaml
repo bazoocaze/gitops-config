@@ -13,6 +13,8 @@ spec:
         name: my-java-app
   values:
     replicaCount: 1
+    imagePullSecrets:
+      - name: ghcr-auth
     image:
       repository: ghcr.io/bazoocaze/my-java-app
       tag: latest

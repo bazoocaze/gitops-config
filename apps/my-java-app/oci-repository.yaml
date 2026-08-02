@@ -8,3 +8,5 @@ spec:
   url: oci://ghcr.io/bazoocaze/charts/my-java-app
   ref:
     tag: 0.1.0
+  secretRef:
+    name: ghcr-auth
