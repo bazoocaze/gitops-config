@@ -1,0 +1,22 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: my-java-app
+  namespace: default
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: my-java-app
+      sourceRef:
+        kind: OCIRepository
+        name: my-java-app
+  values:
+    replicaCount: 1
+    image:
+      repository: ghcr.io/bazoocaze/my-java-app
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 8080

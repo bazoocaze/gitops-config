@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: my-java-app
+  namespace: default
+spec:
+  interval: 10m
+  url: oci://ghcr.io/bazoocaze/charts/my-java-app
+  ref:
+    tag: 0.1.0
