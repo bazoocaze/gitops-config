@@ -45,6 +45,29 @@ gitops-config/
 - **Namespace padrão**: os HelmReleases usam `namespace: default` (secret `ghcr-auth` vive lá).
 - **Intervalos**: `interval: 5m` nos HelmReleases, `10m`/`1h` nas sources.
 
+## Ingress-nginx (via Flux)
+
+- **Namespace**: `default`. Chart oficial `ingress-nginx/ingress-nginx` (HelmRepository público).
+- **kind**: `kind: DaemonSet` com `hostPort.enabled: true`, nodeSelector `kubernetes.io/hostname: kind-control-plane` e **toleration** `node-role.kubernetes.io/control-plane: NoSchedule` (o control-plane do kind é tainted).
+- O `extraPortMappings` (80/443) vive em `kind/kind-config.yaml` — não é gerenciado pelo Flux.
+- Acesso externo: `http://localhost/hello` (porta 80 mapeada pelo kind).
+
+## ⚠️ Migrar recurso manual → GitOps: ordem obrigatória
+
+Quando um recurso foi instalado manualmente (`kubectl apply`) e passa a ser gerenciado por Flux, **NUNCA remova o manual antes de o Flux aplicar o novo**. Ordem correta:
+
+1. Aplicar o novo recurso via Flux primeiro (`flux reconcile source git flux-system` + `flux reconcile kustomization flux-system -n flux-system`)
+2. Validar que o novo subiu (pod Ready, recursos cluster-escopados recriados)
+3. Só então remover a instalação manual
+
+**Motivo (incidente 03/08/2026):** o manifesto manual do ingress-nginx e o Helm chart criavam recursos cluster-escopados com os MESMOS nomes (ClusterRole `ingress-nginx`, IngressClass `nginx`, ValidatingWebhookConfiguration `ingress-nginx-admission`). Remover o manual apagou recursos que o Flux já geria → upgrade Helm travou com `NotFound`.
+
+**Se um HelmRelease ficar com upgrade quebrado:**
+1. `flux suspend helmrelease <name> -n <ns>` — para o Flux tentar
+2. Remover órfãos do release (ex.: `kubectl delete secret ingress-nginx-admission`)
+3. `helm uninstall <name> -n <ns>` — limpa o release
+4. `flux resume helmrelease <name> -n <ns>` — Flux reinstala limpo (revision 1)
+
 ## Comandos úteis
 
 ```bash
