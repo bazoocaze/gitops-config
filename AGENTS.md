@@ -85,6 +85,31 @@ flux reconcile kustomization flux-system -n flux-system   # aplica o estado (2°
 kubectl kustomize clusters/dev
 ```
 
+## Fluxo de rotação de credenciais GHCR (sem expor secrets)
+
+Quando o usuário renova o token do GitHub, atualizar **3 pontos** na ordem:
+
+1. **Docker local** (usado por `publish-image.sh`):
+   ```bash
+   gh auth token | docker login ghcr.io -u bazoocaze --password-stdin
+   ```
+2. **Helm local** (usado por `publish-chart.sh`):
+   ```bash
+   gh auth token | helm registry login ghcr.io -u bazoocaze --password-stdin
+   ```
+3. **`secret/ghcr-auth`** (namespace `default`) — recriar com dockerconfigjson **só** do ghcr.io (não copiar credenciais extras do `~/.docker/config.json`, ex.: ECR):
+   ```bash
+   python3 -c "import json; d=json.load(open('$HOME/.docker/config.json')); open('/tmp/ghcr-dockerconfig.json','w').write(json.dumps({'auths':{'ghcr.io':d['auths']['ghcr.io']}}))"
+   chmod 600 /tmp/ghcr-dockerconfig.json
+   kubectl create secret docker-registry ghcr-auth -n default --from-file=.dockerconfigjson=/tmp/ghcr-dockerconfig.json --dry-run=client -o yaml | kubectl apply -f -
+   rm -f /tmp/ghcr-dockerconfig.json
+   ```
+
+**Regras da rotação:**
+- Sempre usar `gh auth token | <cmd> --password-stdin` — o token nunca aparece em output
+- Arquivos temporários com credenciais: `chmod 600` + remover após uso
+- Após rotacionar, validar: `flux get sources helm -A` (Ready), `kubectl get helmcharts -A` (Ready), `curl http://localhost/hello` (HTTP 200)
+
 ## Fluxo de bump de versão de app
 
 1. Publicar nova imagem e chart no GHCR (scripts em `repos/my-java-app/local/publish-all.sh`)
