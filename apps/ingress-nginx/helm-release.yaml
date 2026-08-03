@@ -1,0 +1,25 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ingress-nginx
+  namespace: default
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: ingress-nginx
+      sourceRef:
+        kind: HelmRepository
+        name: ingress-nginx
+        namespace: default
+      interval: 1h
+  values:
+    controller:
+      hostPort:
+        enabled: true
+      service:
+        type: NodePort
+      kind: DaemonSet
+      nodeSelector:
+        kubernetes.io/hostname: kind-control-plane
+      watchIngressWithoutClass: true
