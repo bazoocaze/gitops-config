@@ -1,0 +1,108 @@
+# gitops-config
+
+## O que é este repositório
+
+Repositório GitOps que define **o estado desejado** do cluster kind (`kind-kind`) e dos aplicativos nele, gerenciado por **Flux v2**. Nenhum manifest aqui é aplicado manualmente — o Flux reconcilia este repositório continuamente e aplica/prune as mudanças.
+
+## Fluxos de trabalho
+
+Flux é bootstrapped com **dois caminhos**:
+
+1. `clusters/dev/flux-system/` — os próprios componentes do Flux (instalados pelo `flux bootstrap`, **não editar manualmente**)
+   - `gotk-components.yaml` — CRDs + controllers do Flux
+   - `gotk-sync.yaml` — `GitRepository` (aponta para este repo, branch `main`) + `Kustomization` `flux-system`
+2. `clusters/dev/kustomization.yaml` — o cluster: referencia os apps em `apps/`
+
+O `Kustomization` `flux-system` reconcilia o path `./clusters/dev` a cada `10m` (interval do `gotk-sync.yaml`). O `GitRepository` poll o repo a cada `1m`.
+
+## Estrutura
+
+```
+gitops-config/
+├── clusters/
+│   └── dev/
+│       ├── kustomization.yaml          # cluster: referencia ../../apps/*
+│       └── flux-system/                # gerado pelo flux bootstrap (não editar)
+│           ├── gotk-components.yaml
+│           ├── gotk-sync.yaml
+│           └── kustomization.yaml
+└── apps/
+    ├── my-java-app/                    # app Java (Helm chart OCI no GHCR)
+    │   ├── kustomization.yaml
+    │   ├── oci-repository.yaml         # HelmRepository type=oci → oci://ghcr.io/bazoocaze/charts
+    │   └── helm-release.yaml           # HelmRelease com values (image tag, ingress, imagePullSecret)
+    └── ingress-nginx/                  # ingress controller (Helm chart do repo público)
+        ├── kustomization.yaml
+        ├── helm-repository.yaml        # HelmRepository → https://kubernetes.github.io/ingress-nginx
+        └── helm-release.yaml           # HelmRelease ingress-nginx (hostPort, DaemonSet, nodeSelector)
+```
+
+## Padrões usados
+
+- **Um diretório por aplicativo em `apps/<nome>/`** com `kustomization.yaml` agrupando os recursos.
+- **Apps adicionados ao cluster** referenciando `../../apps/<nome>` em `clusters/dev/kustomization.yaml`.
+- **Helm via Flux** (`HelmRelease`), não via `helm install` manual. Charts do GHCR são `HelmRepository type: oci`; charts públicos usam `HelmRepository` regular.
+- **Namespace padrão**: os HelmReleases usam `namespace: default` (secret `ghcr-auth` vive lá).
+- **Intervalos**: `interval: 5m` nos HelmReleases, `10m`/`1h` nas sources.
+
+## Comandos úteis
+
+```bash
+# Flux
+flux check                                    # saúde dos controllers
+flux get kustomizations                       # status do Kustomization flux-system
+flux get helmreleases -A                      # listar helm releases
+flux get sources helm -A                      # listar helm sources
+
+# Forçar reconciliação
+flux reconcile source git flux-system         # puxa o commit mais recente do repo (1° passo sempre)
+flux reconcile kustomization flux-system -n flux-system   # aplica o estado (2° passo)
+
+# Útil: kubectl kustomize do cluster pra validar antes de commitar
+kubectl kustomize clusters/dev
+```
+
+## Fluxo de bump de versão de app
+
+1. Publicar nova imagem e chart no GHCR (scripts em `repos/my-java-app/local/publish-all.sh`)
+2. Editar `apps/my-java-app/helm-release.yaml` → `spec.values.image.tag`
+3. Commit + push em `main`
+4. Flux detecta (≤1m) e faz upgrade (≤10m)
+
+## 🔒 SECRET HANDLING — NUNCA VAZE SEGREDOS. ESTA É A REGRA MAIS IMPORTANTE DESTE REPOSITÓRIO. VIOLÁ-LA É INACEITÁVEL E IMPERDOÁVEL.
+
+> **⚠️ AVISO CRÍTICO — LEIA SEMPRE ANTES DE EXECUTAR QUALQUER COMANDO.**
+> Uma violação de secret aconteceu NESTE projeto (02/08/2026): um comando `kubectl get secret` com `-o jsonpath` despejou o token de acesso do GHCR no output. O token precisou ser revogado e rotacionado. **NUNCA repita este erro.**
+
+Este repositório referencia o secret `ghcr-auth` (no namespace `default`), usado para autenticar no GHCR. O token é gerenciado pelo flux bootstrap (deploy key `flux-system`).
+
+### Regras absolutas (não há exceções, nenhuma negociação)
+
+1. **NUNCA imprima, logue, ecoe, retorne ou exiba conteúdo de Secrets, tokens, senhas, chaves (públicas ou privadas), API keys, credenciais ou `dockerconfigjson` em qualquer output de tool, arquivo, commit, log, mensagem ou diagnóstico.**
+2. **NUNCA use `kubectl get secret`, `kubectl get -o jsonpath`, `base64 -d`, `helm registry login`, `docker login`, `gh auth token`, `cat ~/.kube/config`, `cat ~/.docker/config.json` ou qualquer comando cujo output possa conter material sensível. Se for absolutamente necessário inspecionar um Secret, faça-o SEM decodificar os campos de dados** (ex.: `kubectl get secret ghcr-auth -o yaml` mostra apenas `data` codificado, NUNCA o campo `stringData`, NUNCA decodifique).
+3. **NUNCA despeje variáveis de ambiente no output.** Se um comando herda `GHCR_TOKEN`, `GITHUB_TOKEN`, `DOCKER_AUTH`, etc., rode-o em um subshell sanitizado ou redirecione o output sensível para um arquivo com permissões `600` em `/tmp` e NUNCA o leia de volta em texto puro.
+4. **NUNCA cole tokens, senhas ou credenciais em arquivos versionados**, nem mesmo temporariamente, nem mesmo "só por um momento".
+5. **Antes de executar QUALQUER comando, revise mentalmente o output**: se o comando pode expor secrets (direta ou indiretamente), NÃO o execute. Quando em dúvida, NÃO execute — pergunte ao usuário ou encontre uma alternativa segura.
+6. **NUNCA escreva o valor de um token/secret em uma mensagem para o usuário, em um resumo, em um diff, em um PR ou em um commit message.** Referencie-o apenas pelo nome do recurso (ex.: "o secret `ghcr-auth`").
+
+### Checklist obrigatório antes de rodar comandos de inspeção no cluster
+
+- O comando decodifica algo? → **NÃO RODE**.
+- O comando tem `-o jsonpath`, `-o go-template`, `-o yaml` sobre Secret? → **NÃO RODE** (ou use apenas campos estruturais, nunca `data`/`stringData`).
+- O output pode conter um token regex-like (`gho_`, `ghp_`, `ghs_`, `ghu_`, `AKIA`, `BEGIN ... PRIVATE KEY`, etc.)? → **NÃO RODE**.
+- Se precisar verificar autenticação/credenciais, use comandos que NÃO retornam o segredo (ex.: `docker login` em modo interativo, `gh auth status`, `flux get sources`).
+
+### Se, apesar de tudo, um secret for exposto
+
+1. **AVISE O USUÁRIO IMEDIATAMENTE** e com clareza.
+2. **NÃO continue o trabalho** até o usuário revogar/rotacionar a credencial.
+3. **NUNCA tente "consertar" silenciosamente** reescrevendo o histórico ou o log — o segredo já foi comprometido e precisa ser rotacionado pelo usuário.
+4. Depois de rotacionado, registre o incidente aqui (seção acima) para que o próximo agente aprenda.
+
+## Agent Behavior
+
+- Quando o usuário pede **discussão, avaliação ou review**, o agente deve primeiro discutir e só fazer mudanças após o usuário autorizar explicitamente.
+- **Sempre** validar com `kubectl kustomize clusters/dev` antes de commitar mudanças estruturais.
+- Após alterar o repo, seguir a ordem de reconciliação: `flux reconcile source git flux-system` primeiro, depois `flux reconcile kustomization flux-system -n flux-system`.
+- **NUNCA** editar `clusters/dev/flux-system/` (gerado pelo bootstrap).
+- Commits em `main` disparam reconciliação automática — mensagens de commit claras e sem secrets (ver regras acima).
