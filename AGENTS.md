@@ -112,10 +112,11 @@ Quando o usuário renova o token do GitHub, atualizar **3 pontos** na ordem:
 
 ## Fluxo de bump de versão de app
 
-1. Publicar nova imagem e chart no GHCR (scripts em `repos/my-java-app/local/publish-all.sh`)
-2. Editar `apps/my-java-app/helm-release.yaml` → `spec.values.image.tag`
-3. Commit + push em `main`
-4. Flux detecta (≤1m) e faz upgrade (≤10m)
+**Automático (padrão):** o CI do `my-java-app` (job `publish`, push → main) publica imagem+chart no GHCR com versão `1.0.<run_number>` e **já comita aqui** o bump de `apps/my-java-app/helm-release.yaml` (`spec.values.image.tag`), com commit `chore: bump my-java-app to <version> [skip ci]`. Nenhuma edição manual é necessária.
+
+**Manual (exceção):** se precisar pinar versão à mão — editar `apps/my-java-app/helm-release.yaml` → commit + push em `main`. Flux detecta (≤1m) e faz upgrade (≤10m).
+
+**Ordem de verificação após o CI commitar:** `flux reconcile source git flux-system` → `flux get helmreleases -A` (READY) → `curl http://localhost/hello`.
 
 ## 🔒 SECRET HANDLING — NUNCA VAZE SEGREDOS. ESTA É A REGRA MAIS IMPORTANTE DESTE REPOSITÓRIO. VIOLÁ-LA É INACEITÁVEL E IMPERDOÁVEL.
 
@@ -153,4 +154,5 @@ Este repositório referencia o secret `ghcr-auth` (no namespace `default`), usad
 - **Sempre** validar com `kubectl kustomize clusters/dev` antes de commitar mudanças estruturais.
 - Após alterar o repo, seguir a ordem de reconciliação: `flux reconcile source git flux-system` primeiro, depois `flux reconcile kustomization flux-system -n flux-system`.
 - **NUNCA** editar `clusters/dev/flux-system/` (gerado pelo bootstrap).
+- Commits do usuário **`CI Release Bot`** (`chore: bump my-java-app to <version> [skip ci]`) são gerados automaticamente pelo CI do `my-java-app` — não desfazer e não se surpreender com eles.
 - Commits em `main` disparam reconciliação automática — mensagens de commit claras e sem secrets (ver regras acima).
