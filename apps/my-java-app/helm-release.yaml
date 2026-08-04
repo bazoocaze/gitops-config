@@ -19,7 +19,7 @@ spec:
       - name: ghcr-auth
     image:
       repository: ghcr.io/bazoocaze/my-java-app
-      tag: 1.0.14 # {"$imagepolicy": "default:my-java-app"}
+      tag: ghcr.io/bazoocaze/my-java-app:1.1.0 # {"$imagepolicy": "default:my-java-app"}
       pullPolicy: IfNotPresent
     service:
       type: ClusterIP
