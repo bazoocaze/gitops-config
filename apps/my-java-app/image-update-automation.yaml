@@ -17,7 +17,7 @@ spec:
       author:
         email: flux-image-automation@users.noreply.github.com
         name: Flux Image Automation
-      messageTemplate: 'chore: auto-bump my-java-app to {{ .NewImageTag }} [skip ci]'
+      messageTemplate: 'chore: auto-bump my-java-app [skip ci]'
     push:
       branch: main
   update:
