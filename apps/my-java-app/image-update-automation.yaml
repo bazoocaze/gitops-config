@@ -20,8 +20,6 @@ spec:
       messageTemplate: 'chore: auto-bump my-java-app to {{ .NewImageTag }} [skip ci]'
     push:
       branch: main
-      secretRef:
-        name: flux-ia-key
   update:
     path: ./apps/my-java-app
     strategy: Setters
