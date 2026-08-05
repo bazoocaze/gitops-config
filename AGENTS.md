@@ -44,6 +44,7 @@ gitops-config/
 - **Helm via Flux** (`HelmRelease`), não via `helm install` manual. Charts do GHCR são `HelmRepository type: oci`; charts públicos usam `HelmRepository` regular.
 - **Namespace padrão**: os HelmReleases usam `namespace: default` (secret `ghcr-auth` vive lá).
 - **Intervalos**: `interval: 5m` nos HelmReleases, `10m`/`1h` nas sources.
+- **DRY nos values do HelmRelease**: só declarar overrides que divergem dos defaults do chart (ex.: `image.repository`, `image.tag`, `imagePullSecrets`, `ingress.enabled: true`). Valores idênticos ao default do chart (ex.: `replicaCount`, `service.type`, `service.port`, `pullPolicy`, `ingress.hosts`) ficam no chart e não precisam ser repetidos — evita duplicação e mantém o HelmRelease enxuto. Isso TAMBÉM vale para o ingress: o HelmRelease só seta `enabled: true`; `className`, `hosts` e `paths` vêm dos defaults do chart.
 
 ## Ingress-nginx (via Flux)
 
@@ -119,6 +120,8 @@ Quando o usuário renova o token do GitHub, atualizar **3 pontos** na ordem:
 **Manual (exceção):** se precisar pinar versão à mão — editar `apps/my-java-app/helm-release.yaml` → commit + push em `main`. Flux detecta (≤1m) e faz upgrade (≤10m).
 
 **Ordem de verificação após o CI commitar:** `flux reconcile source git flux-system` → `flux get helmreleases -A` (READY) → `curl http://localhost/hello`.
+
+**⚠️ Cuidado com push rejeitado por bump concorrente:** o ImageUpdateAutomation pode commitar no `main` enquanto se trabalha localmente. Se o push for rejeitado (`fetch first`), **NÃO decidir sozinho qual versão manter** — avisar o usuário sobre o conflito (versão local vs versão do autoupdater) e deixá-lo escolher antes de resolver.
 
 ## 🔒 SECRET HANDLING — NUNCA VAZE SEGREDOS. ESTA É A REGRA MAIS IMPORTANTE DESTE REPOSITÓRIO. VIOLÁ-LA É INACEITÁVEL E IMPERDOÁVEL.
 
