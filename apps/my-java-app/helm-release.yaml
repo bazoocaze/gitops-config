@@ -14,21 +14,10 @@ spec:
         namespace: default
       interval: 10m
   values:
-    replicaCount: 1
     imagePullSecrets:
       - name: ghcr-auth
     image:
       repository: ghcr.io/bazoocaze/my-java-app
       tag: 1.0.17 # {"$imagepolicy": "default:my-java-app:tag"}
-      pullPolicy: IfNotPresent
-    service:
-      type: ClusterIP
-      port: 8080
     ingress:
       enabled: true
-      className: "nginx"
-      hosts:
-        - host: localhost
-          paths:
-            - path: /
-              pathType: Prefix
