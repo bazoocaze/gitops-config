@@ -18,6 +18,6 @@ spec:
       - name: ghcr-auth
     image:
       repository: ghcr.io/bazoocaze/my-java-app
-      tag: 1.0.17 # {"$imagepolicy": "default:my-java-app:tag"}
+      tag: 1.0.18 # {"$imagepolicy": "default:my-java-app:tag"}
     ingress:
       enabled: true
