@@ -27,7 +27,7 @@ gitops-config/
 │           ├── gotk-sync.yaml
 │           └── kustomization.yaml
 └── apps/
-    ├── my-java-app/                    # app Java (Helm chart OCI no GHCR)
+    ├── my-java-app1/                    # app Java (Helm chart OCI no GHCR)
     │   ├── kustomization.yaml
     │   ├── oci-repository.yaml         # HelmRepository type=oci → oci://ghcr.io/bazoocaze/charts
     │   └── helm-release.yaml           # HelmRelease com values (image tag, ingress, imagePullSecret)
@@ -113,11 +113,11 @@ Quando o usuário renova o token do GitHub, atualizar **3 pontos** na ordem:
 
 ## Fluxo de bump de versão de app
 
-**Automático via Flux ImageUpdateAutomation:** o CI do `my-java-app` publica imagem+chart no GHCR com versão `1.0.<run_number>`. O Flux ImageUpdateAutomation detecta a nova tag, atualiza `apps/my-java-app/helm-release.yaml` (`spec.values.image.tag`) e commita no gitops-config. Flux faz o deploy automaticamente.
+**Automático via Flux ImageUpdateAutomation:** o CI do `my-java-app1` publica imagem+chart no GHCR com versão `1.0.<run_number>`. O Flux ImageUpdateAutomation detecta a nova tag, atualiza `apps/my-java-app1/helm-release.yaml` (`spec.values.image.tag`) e commita no gitops-config. Flux faz o deploy automaticamente.
 
 **Política de versão:** o `ImagePolicy` usa semver `~1.0.0` (apenas patch versions — `1.0.x`). Tags como `1.1.0` ou `2.0.0` não são selecionadas.
 
-**Manual (exceção):** se precisar pinar versão à mão — editar `apps/my-java-app/helm-release.yaml` → commit + push em `main`. Flux detecta (≤1m) e faz upgrade (≤10m).
+**Manual (exceção):** se precisar pinar versão à mão — editar `apps/my-java-app1/helm-release.yaml` → commit + push em `main`. Flux detecta (≤1m) e faz upgrade (≤10m).
 
 **Ordem de verificação após o CI commitar:** `flux reconcile source git flux-system` → `flux get helmreleases -A` (READY) → `curl http://localhost/hello`.
 
@@ -159,5 +159,5 @@ Este repositório referencia o secret `ghcr-auth` (no namespace `default`), usad
 - **Sempre** validar com `kubectl kustomize clusters/dev` antes de commitar mudanças estruturais.
 - Após alterar o repo, seguir a ordem de reconciliação: `flux reconcile source git flux-system` primeiro, depois `flux reconcile kustomization flux-system -n flux-system`.
 - **NUNCA** editar `clusters/dev/flux-system/` (gerado pelo bootstrap).
-- Commits do usuário **`CI Release Bot`** (`chore: bump my-java-app to <version> [skip ci]`) são gerados automaticamente pelo CI do `my-java-app` — não desfazer e não se surpreender com eles.
+- Commits do usuário **`CI Release Bot`** (`chore: bump my-java-app1 to <version> [skip ci]`) são gerados automaticamente pelo CI do `my-java-app1` — não desfazer e não se surpreender com eles.
 - Commits em `main` disparam reconciliação automática — mensagens de commit claras e sem secrets (ver regras acima).

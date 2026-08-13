@@ -1,11 +1,11 @@
 apiVersion: image.toolkit.fluxcd.io/v1
 kind: ImagePolicy
 metadata:
-  name: my-java-app
+  name: my-java-app1
   namespace: default
 spec:
   imageRepositoryRef:
-    name: my-java-app
+    name: my-java-app1
   policy:
     semver:
       range: "~1.0.0"

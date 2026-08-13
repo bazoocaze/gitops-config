@@ -1,7 +1,7 @@
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: my-java-app
+  name: my-java-app1
   namespace: default
 spec:
   type: oci
