@@ -3524,6 +3524,7 @@ spec:
         - --log-level=info
         - --log-encoding=json
         - --enable-leader-election
+        - --enable-helm
         env:
         - name: RUNTIME_NAMESPACE
           valueFrom:
