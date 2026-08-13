@@ -1,0 +1,8 @@
+appName: my-java-app1
+image:
+  repository: ghcr.io/bazoocaze/my-java-app1
+  tag: 1.0.23 # {"$imagepolicy": "default:my-java-app1:tag"}
+ingress:
+  path: /my-java-app1(/|$)(.*)
+imageUpdateAutomation:
+  commitTemplate: 'chore: auto-bump my-java-app1 [skip ci]'

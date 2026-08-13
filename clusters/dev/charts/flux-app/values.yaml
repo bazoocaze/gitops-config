@@ -1,0 +1,32 @@
+appName: my-app
+namespace: default
+ociRepository:
+  registry: ghcr.io
+  org: bazoocaze
+  interval: 10m
+  secretRef: ghcr-auth
+helmRelease:
+  interval: 5m
+  chartInterval: 10m
+imagePullSecret: ghcr-auth
+image:
+  repository: ghcr.io/bazoocaze/my-app
+  tag: 1.0.0
+ingress:
+  enabled: true
+  className: nginx
+  rewriteTarget: /$2
+  host: localhost
+  path: /my-app(/|$)(.*)
+  pathType: ImplementationSpecific
+imageRepository:
+  interval: 5m
+imagePolicy:
+  semver: "~1.0.0"
+imageUpdateAutomation:
+  interval: 5m
+  branch: main
+  authorName: Flux Image Automation
+  authorEmail: flux-image-automation@users.noreply.github.com
+  commitTemplate: 'chore: auto-bump my-app [skip ci]'
+  updatePath: ./clusters/dev

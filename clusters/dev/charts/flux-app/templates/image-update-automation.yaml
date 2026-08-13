@@ -1,0 +1,25 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: {{ .Values.appName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  interval: {{ .Values.imageUpdateAutomation.interval }}
+  git:
+    checkout:
+      ref:
+        branch: {{ .Values.imageUpdateAutomation.branch }}
+    commit:
+      author:
+        email: {{ .Values.imageUpdateAutomation.authorEmail }}
+        name: {{ .Values.imageUpdateAutomation.authorName }}
+      messageTemplate: {{ .Values.imageUpdateAutomation.commitTemplate | quote }}
+    push:
+      branch: {{ .Values.imageUpdateAutomation.branch }}
+  update:
+    path: {{ .Values.imageUpdateAutomation.updatePath }}
+    strategy: Setters

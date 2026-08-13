@@ -1,0 +1,11 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: {{ .Values.appName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  type: oci
+  interval: {{ .Values.ociRepository.interval }}
+  url: oci://{{ .Values.ociRepository.registry }}/{{ .Values.ociRepository.org }}/charts
+  secretRef:
+    name: {{ .Values.ociRepository.secretRef }}
