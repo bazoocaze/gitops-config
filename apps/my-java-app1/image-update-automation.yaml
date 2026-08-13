@@ -1,0 +1,25 @@
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: my-java-app1
+  namespace: default
+spec:
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+    namespace: flux-system
+  interval: 5m
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        email: flux-image-automation@users.noreply.github.com
+        name: Flux Image Automation
+      messageTemplate: 'chore: auto-bump my-java-app1 [skip ci]'
+    push:
+      branch: main
+  update:
+    path: ./apps/my-java-app1
+    strategy: Setters

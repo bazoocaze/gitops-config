@@ -1,19 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
-helmCharts:
-  - name: flux-app
-    releaseName: my-java-app1
-    namespace: default
-    valuesFile: values/my-java-app1.yaml
-    includeCRDs: false
-  - name: flux-app
-    releaseName: my-java-app2
-    namespace: default
-    valuesFile: values/my-java-app2.yaml
-    includeCRDs: false
-
 resources:
-  - flux-image/gotk-image-components.yaml
-  - ingress-nginx/helm-repository.yaml
-  - ingress-nginx/helm-release.yaml
+  - ./flux-image
+  - ../../apps/my-java-app1
+  - ../../apps/my-java-app2
+  - ../../apps/ingress-nginx

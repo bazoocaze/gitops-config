@@ -1,5 +1,0 @@
-apiVersion: v2
-name: flux-app
-description: Flux GitOps resources (HelmRepository, HelmRelease, ImageRepository, ImagePolicy, ImageUpdateAutomation)
-type: application
-version: 0.1.0
