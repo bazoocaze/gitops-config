@@ -21,3 +21,11 @@ spec:
       tag: 1.0.19 # {"$imagepolicy": "default:my-java-app:tag"}
     ingress:
       enabled: true
+      className: "nginx"
+      annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /$2
+      hosts:
+        - host: localhost
+          paths:
+            - path: /my-java-app(/|$)(.*)
+              pathType: ImplementationSpecific
